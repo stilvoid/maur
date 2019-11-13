@@ -1,0 +1,50 @@
+#!/bin/bash
+
+AUR="https://aur.archlinux.org"
+
+package="$1"
+
+if [[ "$package" == "--help" || "$package" == "-h" ]]; then
+    cat <<EOF
+Usage: $0 [package]
+
+  If you do not supply a package name, maur will list all available AUR packages.
+
+  If you do supply a package name, maur will clone it into a temporary directory,
+  open the PKGBUILD for you to review, and then prompt you to confirm installation.
+EOF
+fi
+
+if [ -z "$package" ]; then
+    curl -s "${AUR}/packages.gz" | zcat
+    exit
+fi
+
+dir=$(mktemp -d)
+
+function cleanup() {
+    rm -rf $dir
+}
+
+trap "cleanup" ERR
+
+# Clone
+cd $dir
+echo "Cloning ${package}..."
+git clone "${AUR}/${package}.git" ./ >/dev/null 2>&1
+
+# Edit
+$EDITOR ./PKGBUILD
+
+# Confirm
+read -p "Type yes to confirm installation of ${package}: " confirm
+if [[ "$confirm" != "yes" ]]; then
+    echo "Aborting..."
+    cleanup
+    exit 1
+fi
+
+# Install
+echo "Installing ${package}..."
+makepkg -si
+cleanup
