@@ -52,7 +52,7 @@ $EDITOR ./PKGBUILD
 echo
 echo "If you want to make any changes before install, the package is in ${dir}"
 echo
-read -p "Type yes to confirm installation of ${package}: " confirm
+read -p "Type 'yes' to confirm installation of ${package}: " confirm
 if [[ "$confirm" != "yes" ]]; then
     exit 1
 fi
