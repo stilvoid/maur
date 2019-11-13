@@ -20,13 +20,24 @@ if [ -z "$package" ]; then
     exit
 fi
 
+# Confirm package exists
+status=$(curl -s -I "${AUR}/packages/${package}" | head -n 1 | awk '{print $2}')
+if [[ "$status" != "200" ]]; then
+    echo "No such package: ${package}"
+    exit 1
+fi
+
 dir=$(mktemp -d)
 
 function cleanup() {
+    echo
+    echo "Cleaning up..."
     rm -rf $dir
 }
 
-trap "cleanup" ERR
+set -e
+trap cleanup ERR
+trap cleanup EXIT
 
 # Clone
 cd $dir
@@ -37,14 +48,15 @@ git clone "${AUR}/${package}.git" ./ >/dev/null 2>&1
 $EDITOR ./PKGBUILD
 
 # Confirm
+echo
+echo "If you want to make any changes before install, the package is in ${dir}"
+echo
 read -p "Type yes to confirm installation of ${package}: " confirm
 if [[ "$confirm" != "yes" ]]; then
-    echo "Aborting..."
-    cleanup
     exit 1
 fi
 
 # Install
+echo
 echo "Installing ${package}..."
 makepkg -si
-cleanup
